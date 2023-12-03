@@ -32,7 +32,7 @@ def main():
 
     dist_util.setup_dist(args.device)
 
-    print("creating data loader...")
+    print("creating data loader for dataset {}...".format(args.dataset))
     data = get_dataset_loader(name=args.dataset, batch_size=args.batch_size, num_frames=args.num_frames)
 
     print("creating model and diffusion...")

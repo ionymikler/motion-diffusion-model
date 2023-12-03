@@ -1,8 +1,8 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from data_loaders.tensors import collate as all_collate
 from data_loaders.tensors import t2m_collate
 
-def get_dataset_class(name):
+def get_dataset_class(name)->Dataset:
     if name == "amass":
         from .amass import AMASS
         return AMASS
@@ -31,7 +31,7 @@ def get_collate_fn(name, hml_mode='train'):
         return all_collate
 
 
-def get_dataset(name, num_frames, split='train', hml_mode='train'):
+def get_dataset(name, num_frames, split='train', hml_mode='train')->Dataset:
     DATA = get_dataset_class(name)
     if name in ["humanml", "kit"]:
         dataset = DATA(split=split, num_frames=num_frames, mode=hml_mode)

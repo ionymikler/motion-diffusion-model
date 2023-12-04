@@ -1,3 +1,4 @@
+from torch.utils.data import DataLoader, Dataset
 from model.mdm import MDM
 from diffusion import gaussian_diffusion as gd
 from diffusion.respace import SpacedDiffusion, space_timesteps
@@ -10,7 +11,7 @@ def load_model_wo_clip(model, state_dict):
     assert all([k.startswith('clip_model.') for k in missing_keys])
 
 
-def create_model_and_diffusion(args, data):
+def create_model_and_diffusion(args, data:DataLoader):
     model = MDM(**get_model_args(args, data))
     diffusion = create_gaussian_diffusion(args)
     return model, diffusion
@@ -27,7 +28,7 @@ def get_model_args(args, data):
     else:
         num_actions = 1
 
-    # SMPL defaults
+    # SMPL defaults 
     data_rep = 'rot6d'
     njoints = 25
     nfeats = 6
@@ -37,6 +38,11 @@ def get_model_args(args, data):
         njoints = 263
         nfeats = 1
     elif args.dataset == 'kit':
+        data_rep = 'hml_vec'
+        njoints = 251
+        nfeats = 1
+    elif args.dataset == 'motionx':
+        # TODO: Check if these values need to change
         data_rep = 'hml_vec'
         njoints = 251
         nfeats = 1

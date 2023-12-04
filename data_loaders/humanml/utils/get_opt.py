@@ -68,6 +68,14 @@ def get_opt(opt_path, device):
         opt.joints_num = 21
         opt.dim_pose = 251
         opt.max_motion_length = 196
+    elif opt.dataset_name == 'grab': #subset of Motion-X
+        opt.data_root = './dataset/Motion-X/'
+        opt.motion_dir = pjoin(opt.data_root, 'datasets/motion_data/smplx_322/GRAB/GRAB_motion/')
+        opt.text_dir = pjoin(opt.data_root, 'datasets/semantic_labels/GRAB')
+        # opt.joints_num = 72 # TODO (elmc): verify this BUT ALSO I'M NOT USING IT FOR NOW!
+        opt.dim_pose = 212 # from 313 originally. We drop betas (body shape) and face-shape from Motion data (via to_smplx_params & smplx_dict_to_array method)
+        # TODO: Check where this dim reduction happens
+        opt.max_motion_length = 400 # TODO: Needed?
     else:
         raise KeyError('Dataset not recognized')
 

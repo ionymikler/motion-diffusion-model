@@ -1,4 +1,6 @@
+from typing import List
 import torch
+
 
 def lengths_to_mask(lengths, max_len):
     # max_len = max(lengths)
@@ -19,9 +21,9 @@ def collate_tensors(batch):
     return canvas
 
 
-def collate(batch):
+def collate(batch:List[dict]):
     notnone_batches = [b for b in batch if b is not None]
-    databatch = [b['inp'] for b in notnone_batches]
+    databatch = [b['inp'] for b in notnone_batches] # 'inp' := 'input'
     if 'lengths' in notnone_batches[0]:
         lenbatch = [b['lengths'] for b in notnone_batches]
     else:
@@ -62,6 +64,17 @@ def t2m_collate(batch):
         'text': b[2], #b[0]['caption']
         'tokens': b[6],
         'lengths': b[5],
+    } for b in batch]
+    return collate(adapted_batch)
+
+def motionx_collate(batch):
+    """
+    adaptation of 't2m_collate' to cater needs in a not good way, to avoid bigger code refac.
+    """
+    adapted_batch = [{
+        'inp': torch.tensor(b[4].T).float().unsqueeze(1), # [seqlen, J] -> [J, 1, seqlen]
+        'text': b[2], #b[0]['caption']
+        'lengths': b[5], # motion length after pre-proc. in Dataset.__get_item__
     } for b in batch]
     return collate(adapted_batch)
 

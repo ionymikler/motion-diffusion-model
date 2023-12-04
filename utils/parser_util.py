@@ -3,7 +3,7 @@ import argparse
 import os
 import json
 
-
+DATASET_OPTIONS = ['humanml', 'kit', 'humanact12', 'uestc', 'motionx']
 def parse_and_load_from_model(parser):
     # args according to the loaded model
     # do not try to specify them from cmd line since they will be overwritten
@@ -95,10 +95,9 @@ def add_model_options(parser):
                             "Currently tested on HumanAct12 only.")
 
 
-
 def add_data_options(parser):
     group = parser.add_argument_group('dataset')
-    group.add_argument("--dataset", default='humanml', choices=['humanml', 'kit', 'humanact12', 'uestc'], type=str,
+    group.add_argument("--dataset", default='humanml', choices=DATASET_OPTIONS, type=str,
                        help="Dataset name (choose from list).")
     group.add_argument("--data_dir", default="", type=str,
                        help="If empty, will use defaults according to the specified dataset.")
@@ -204,7 +203,7 @@ def add_evaluation_options(parser):
 def get_cond_mode(args):
     if args.unconstrained:
         cond_mode = 'no_cond'
-    elif args.dataset in ['kit', 'humanml']:
+    elif args.dataset in ['kit', 'humanml', 'motionx']:
         cond_mode = 'text'
     else:
         cond_mode = 'action'

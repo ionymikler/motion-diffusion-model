@@ -1,4 +1,3 @@
-import copy
 import functools
 import os
 import time
@@ -8,6 +7,7 @@ import numpy as np
 import blobfile as bf
 import torch
 from torch.optim import AdamW
+from torch.utils.data import DataLoader
 
 from diffusion import logger
 from utils import dist_util
@@ -27,14 +27,14 @@ INITIAL_LOG_LOSS_SCALE = 20.0
 
 
 class TrainLoop:
-    def __init__(self, args, train_platform, model, diffusion, data):
+    def __init__(self, args, train_platform, model, diffusion, data:DataLoader):
         self.args = args
         self.dataset = args.dataset
         self.train_platform = train_platform
         self.model = model
         self.diffusion = diffusion
         self.cond_mode = model.cond_mode
-        self.data = data
+        self.data_loader = data
         self.batch_size = args.batch_size
         self.microbatch = args.batch_size  # deprecating this option
         self.lr = args.lr
@@ -50,7 +50,7 @@ class TrainLoop:
         self.resume_step = 0
         self.global_batch = self.batch_size # * dist.get_world_size()
         self.num_steps = args.num_steps
-        self.num_epochs = self.num_steps // len(self.data) + 1
+        self.num_epochs = self.num_steps // len(self.data_loader) + 1
 
         self.sync_cuda = torch.cuda.is_available()
 
@@ -128,7 +128,7 @@ class TrainLoop:
 
         for epoch in range(self.num_epochs):
             print(f'Starting epoch {epoch}')
-            for motion, cond in tqdm(self.data):
+            for motion, cond in tqdm(self.data_loader):
                 if not (not self.lr_anneal_steps or self.step + self.resume_step < self.lr_anneal_steps):
                     break
 
@@ -191,7 +191,7 @@ class TrainLoop:
                                         batch_size=self.args.eval_batch_size, device=self.device, guidance_param = 1,
                                         dataset=self.dataset, unconstrained=self.args.unconstrained,
                                         model_path=os.path.join(self.save_dir, self.ckpt_file_name()))
-            eval_dict = eval_humanact12_uestc.evaluate(eval_args, model=self.model, diffusion=self.diffusion, data=self.data.dataset)
+            eval_dict = eval_humanact12_uestc.evaluate(eval_args, model=self.model, diffusion=self.diffusion, data=self.data_loader.dataset)
             print(f'Evaluation results on {self.dataset}: {sorted(eval_dict["feats"].items())}')
             for k, v in eval_dict["feats"].items():
                 if 'unconstrained' not in k:
@@ -201,7 +201,6 @@ class TrainLoop:
 
         end_eval = time.time()
         print(f'Evaluation time: {round(end_eval-start_eval)/60}min')
-
 
     def run_step(self, batch, cond):
         self.forward_backward(batch, cond)
@@ -226,11 +225,13 @@ class TrainLoop:
                 micro,  # [bs, ch, image_size, image_size]
                 t,  # [bs](int) sampled timesteps
                 model_kwargs=micro_cond,
-                dataset=self.data.dataset
+                dataset=self.data_loader.dataset
             )
 
             if last_batch or not self.use_ddp:
+                breakpoint()
                 losses = compute_losses()
+
             else:
                 with self.ddp_model.no_sync():
                     losses = compute_losses()
@@ -258,10 +259,8 @@ class TrainLoop:
         logger.logkv("step", self.step + self.resume_step)
         logger.logkv("samples", (self.step + self.resume_step + 1) * self.global_batch)
 
-
     def ckpt_file_name(self):
         return f"model{(self.step+self.resume_step):09d}.pt"
-
 
     def save(self):
         def save_checkpoint(params):

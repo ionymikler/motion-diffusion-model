@@ -10,7 +10,8 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 
 from diffusion import logger
-from utils import dist_util
+from diffusion.respace import SpacedDiffusion
+from utils import dist_utilGaussianDiffusion
 from diffusion.fp16_util import MixedPrecisionTrainer
 from diffusion.resample import LossAwareSampler, UniformSampler
 from tqdm import tqdm
@@ -27,7 +28,7 @@ INITIAL_LOG_LOSS_SCALE = 20.0
 
 
 class TrainLoop:
-    def __init__(self, args, train_platform, model, diffusion, data:DataLoader):
+    def __init__(self, args, train_platform, model, diffusion:SpacedDiffusion, data:DataLoader):
         self.args = args
         self.dataset = args.dataset
         self.train_platform = train_platform
